@@ -54,6 +54,7 @@ It automates abandoned-cart recovery, post-delivery feedback collection, low-rat
 ## Detailed Flow Breakdown
 
 ## 1) Abandoned Cart Recovery Flow
+<img width="1203" height="355" alt="Abandoned Cart Recovery Flow" src="https://github.com/user-attachments/assets/b0693000-1601-473d-8aa7-631e5db46051" />
 
 ### Purpose
 
@@ -82,6 +83,7 @@ Capture abandoned checkouts, persist them, send recovery email after delay, then
 - offer_code_sent
 
 ## 2) Post-Delivery Feedback + Alert Flow
+<img width="1454" height="383" alt="Post-Delivery Feedback + Alert Flow" src="https://github.com/user-attachments/assets/96d82800-72db-4002-9cac-713bbff9fe5a" />
 
 ### Purpose
 
@@ -110,6 +112,7 @@ Request customer feedback after fulfillment and instantly alert if satisfaction 
 - Low rating threshold: satisfaction_rating less than 3
 
 ## 3) Daily Cart Recovery Report Flow
+<img width="1200" height="475" alt="Daily Cart Recovery Report Flow" src="https://github.com/user-attachments/assets/075d5f24-1a4b-4b57-bdca-ec3e5e99a4b4" />
 
 ### Purpose
 
@@ -128,6 +131,7 @@ Produce daily operational visibility into cart recovery outcomes.
 4. Slack - Daily Report posts summary to configured reporting destination
 
 ## 4) Weekly Feedback Report Flow
+<img width="1351" height="481" alt="Weekly Feedback Report Flow" src="https://github.com/user-attachments/assets/0c1f8f51-75a4-42a3-9ae8-70e9127b0ff7" />
 
 ### Purpose
 
@@ -148,6 +152,7 @@ Create weekly customer feedback digest for operations and leadership.
    - Gmail - Weekly Digest
 
 ## 5) Cart Recovery Confirmation Flow
+<img width="684" height="396" alt="Cart Recovery Confirmation Flow" src="https://github.com/user-attachments/assets/02792205-9aa7-4266-9c18-9b7b163c281d" />
 
 ### Purpose
 
