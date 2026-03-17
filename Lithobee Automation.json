@@ -42,6 +42,86 @@
     },
     {
       "parameters": {
+        "content": "## Block: Abandoned Cart Recovery\nTrigger checkout creation, save cart row, wait, send recovery email, and update cart status.",
+        "height": 460,
+        "width": 1500,
+        "color": 5
+      },
+      "id": "b8b37ae2-fb0c-4f2f-b6e9-7a1976af6b70",
+      "name": "Block - Abandoned Cart Recovery",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Block: Post-Delivery Feedback + Low Rating Alerts\nTrigger on fulfilled orders, send feedback form, parse responses, and alert for low ratings.",
+        "height": 560,
+        "width": 1240,
+        "color": 6
+      },
+      "id": "9f7e6d4e-1706-4df9-9ca6-06e300ce6077",
+      "name": "Block - Feedback and Alerts",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Block: Daily Cart Recovery Report\nScheduled daily read from cart sheet, summarize KPIs, and post to Slack.",
+        "height": 320,
+        "width": 880,
+        "color": 4
+      },
+      "id": "4a6f90ed-1ab4-4488-bf73-00d3314dcf8c",
+      "name": "Block - Daily Report",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -144,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Block: Weekly Feedback Report\nScheduled weekly read from feedback sheet, aggregate metrics, notify Slack and email digest.",
+        "height": 352,
+        "width": 912,
+        "color": 7
+      },
+      "id": "f7d80500-a278-4c14-91d4-0ef35d17c8bf",
+      "name": "Block - Weekly Report",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        832,
+        896
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Block: Recovery Confirmation\nTrigger when order is paid and mark matching cart as recovered in tracking sheet.",
+        "height": 256,
+        "width": 672,
+        "color": 3
+      },
+      "id": "1880f636-aa53-4c8f-b31f-c9e4869e61f6",
+      "name": "Block - Cart Recovered Sync",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1456,
+        -112
+      ]
+    },
+    {
+      "parameters": {
         "rule": {
           "interval": [
             {
