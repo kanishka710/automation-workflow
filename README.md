@@ -185,6 +185,7 @@ Reconcile abandoned cart records once payment is completed.
      - order_id
      - customer_email
      - customer_first_name
+       
 2. Abandoned cart tracking sheet
    - Sheet: Abandoned Carts
    - Structure (recommended columns):
@@ -195,12 +196,8 @@ Reconcile abandoned cart records once payment is completed.
      - recovery_url
      - workflow_status
      - outreach_attempts
-     - first_outreach_at
-     - last_outreach_at
      - recovery_channel_sent
      - offer_code_sent
-     - recovered_at
-     - recovered_order_id
 
 ## Configuration and Environment
 
