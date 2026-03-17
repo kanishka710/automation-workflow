@@ -1,0 +1,1329 @@
+{
+  "name": "Lithobee Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "documentId": {
+          "__rl": true,
+          "value": "1K-1hPyJKUXCGlqfPBKymAz6CCmM-2Ev0iud8_VYPL2c",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 45559084,
+          "mode": "list",
+          "cachedResultName": "Form responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1K-1hPyJKUXCGlqfPBKymAz6CCmM-2Ev0iud8_VYPL2c/edit#gid=45559084"
+        },
+        "event": "rowAdded",
+        "options": {}
+      },
+      "id": "5eeb71ea-a082-456e-b6e0-0e41b993ed05",
+      "name": "Google Sheets Trigger - Feedback Row Added",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [
+        896,
+        448
+      ],
+      "credentials": {
+        "googleSheetsTriggerOAuth2Api": {
+          "id": "mkfSufgcktNuywGU",
+          "name": "Google Sheets Trigger OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "d7647a84-dcf2-49ae-b247-39b9eb523e03",
+      "name": "Schedule - Daily Report",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -96,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "60d62db0-e343-42e5-b485-68cb809a7168",
+      "name": "Schedule - Weekly Report",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        912,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "2ff6407c-4233-45b4-8be3-b37cdf71287c",
+      "name": "Wait - 24h Post Delivery",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        176,
+        448
+      ],
+      "webhookId": "7db9e6b7-7e36-4a3e-94a7-31d265a50d2d"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "order-id",
+              "name": "order_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "name": "to_email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "first-name",
+              "name": "first_name",
+              "value": "={{ $json.billing_address.first_name }}",
+              "type": "string"
+            },
+            {
+              "id": "form-link",
+              "name": "form_link",
+              "value": "={{ 'https://docs.google.com/forms/d/1YEMpUp8PB_s8DdGAOmi-NZtEimbFErsQgcqsHLRpd7g/viewform' }}?usp=pp_url&entry.70526960={{ $json.id }}&entry.371011666={{ $json.email }}&entry.178930118={{ $json.billing_address.first_name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "327623a2-33e3-4395-a710-739207ba4c98",
+      "name": "Set - Feedback Form Link",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        400,
+        448
+      ],
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.to_email }}",
+        "subject": "How was your order? We'd love your feedback",
+        "message": "=<p>Hi {{ $json.first_name }},</p><p>Your order has been delivered! We'd love to hear how it went.</p><p>Please take 60 seconds to share your feedback — it helps us serve you better:</p><p><a href=\"{{ $json.form_link }}\">👉 Share Your Feedback</a></p><p>Thank you!</p>",
+        "options": {}
+      },
+      "id": "fd7e91c3-8a5c-440f-906a-cdc7c1af14bc",
+      "name": "Gmail - Feedback Form Link",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        624,
+        448
+      ],
+      "webhookId": "ee29146a-6002-4701-94e0-b780769df3d6",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3ZHtGi4XmicCK45p",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process every new row delivered by the trigger — each item is a genuinely new submission.\n// If multiple rows arrive in the same poll window, all are evaluated for low-rating alerts.\nreturn $input.all().map(item => {\n  const body = item.json.body || item.json;\n\n  const satisfactionRaw =\n    body['Overall, how satisfied are you with our product/service?'] ||\n    body.satisfaction_rating ||\n    body.satisfactionRating ||\n    0;\n\n  const npsRaw =\n    body['How likely are you to recommend us to a friend or colleague?'] ||\n    body.nps_rating ||\n    body.npsRating ||\n    0;\n\n  return {\n    json: {\n      timestamp: body['Timestamp'] || body.timestamp || new Date().toISOString(),\n      satisfaction_rating: Number(satisfactionRaw),\n      nps_rating: Number(npsRaw),\n      comments: body['Comments'] || body.comments || '',\n      order_id: body['Order ID'] || body.order_id || body.orderId || '',\n      customer_email: body['Customer Email'] || body.customer_email || body.customerEmail || '',\n      customer_first_name: body['Customer First Name'] || body.customer_first_name || body.customerFirstName || ''\n    }\n  };\n});"
+      },
+      "id": "d2a7915f-6abc-40d6-9057-e8682182b7a2",
+      "name": "Code - Parse Form Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "low-rating",
+              "leftValue": "={{ $json.satisfaction_rating }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "f444d7f3-bcdf-44ff-b78c-ab59d6bbd3f9",
+      "name": "IF - Low Rating",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        448
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "checkout-id",
+              "name": "checkout_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "recovery-url",
+              "name": "recovery_url",
+              "value": "={{ $json.abandoned_checkout_url || $json.recovery_url || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-email",
+              "name": "customer_email",
+              "value": "={{ $json.email }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-phone",
+              "name": "customer_phone",
+              "value": "={{ $json.phone || ($json.billing_address && $json.billing_address.phone) || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "customer-first-name",
+              "name": "customer_first_name",
+              "value": "={{ ($json.billing_address && $json.billing_address.first_name) || ($json.shipping_address && $json.shipping_address.first_name) || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "created-at",
+              "name": "created_at",
+              "value": "={{ $json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "last-updated-at",
+              "name": "last_updated_at",
+              "value": "={{ $json.updated_at || $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "workflow-status",
+              "name": "workflow_status",
+              "value": "pending",
+              "type": "string"
+            },
+            {
+              "id": "outreach-attempts",
+              "name": "outreach_attempts",
+              "value": "=0",
+              "type": "number"
+            },
+            {
+              "id": "recovery-channel",
+              "name": "recovery_channel_sent",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "offer-code",
+              "name": "offer_code_sent",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c443a54f-5dfa-4835-8373-135d75d4767c",
+      "name": "Set - Cart Row",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        176,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Abandoned Carts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkout_id": "={{ $json.checkout_id }}",
+            "recovery_url": "={{ $json.recovery_url }}",
+            "customer_email": "={{ $json.customer_email }}",
+            "customer_phone": "={{ $json.customer_phone }}",
+            "created_at": "={{ $json.created_at }}",
+            "last_updated_at": "={{ $json.last_updated_at }}",
+            "workflow_status": "={{ $json.workflow_status }}",
+            "outreach_attempts": "={{ $json.outreach_attempts }}",
+            "recovery_channel_sent": "={{ $json.recovery_channel_sent }}",
+            "customer_first_name": "={{ $json.customer_first_name }}",
+            "offer_code_sent": "={{ $json.offer_code_sent }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "checkout_id",
+              "displayName": "checkout_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_phone",
+              "displayName": "customer_phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_updated_at",
+              "displayName": "last_updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow_status",
+              "displayName": "workflow_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "outreach_attempts",
+              "displayName": "outreach_attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_first_name",
+              "displayName": "customer_first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "recovery_channel_sent",
+              "displayName": "recovery_channel_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "offer_code_sent",
+              "displayName": "offer_code_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "recovery_url",
+              "displayName": "recovery_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "feff8fcf-4d09-440e-87ae-2b0bcbc74aca",
+      "name": "Google Sheets - Append Cart",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JghyStBwgr3kLsK9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "id": "818614aa-271a-4c6f-9d89-fa4fa97d1b60",
+      "name": "Wait - 60 Min Cart",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        624,
+        0
+      ],
+      "webhookId": "6339f654-8680-45bf-bf6a-82fd746040c3"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.customer_email }}",
+        "subject": "You left something behind — complete your purchase",
+        "message": "=<p>Hi {{ $json.customer_first_name || 'there' }},</p><p>We noticed you didn't complete your checkout. Your cart is still waiting!</p><p><strong><a href=\"{{ $json.recovery_url || $json.abandoned_checkout_url || '#' }}\">👉 Complete Your Purchase</a></strong></p><p>Need help? Just reply to this email and we'll assist you.</p><p>— The Lithobee Team</p>",
+        "options": {}
+      },
+      "id": "cd217e8b-6613-4f1f-97df-b2eed3d10e32",
+      "name": "Gmail - Cart Recovery",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        848,
+        0
+      ],
+      "webhookId": "ae06b65a-1808-40ba-a4aa-1e29eda05193",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3ZHtGi4XmicCK45p",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build the update payload after sending the recovery email\nconst shopifyData = $('Set - Cart Row').first().json;\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    checkout_id: shopifyData.checkout_id,\n    customer_email: shopifyData.customer_email,\n    workflow_status: 'outreach_sent',\n    outreach_attempts: 1,\n    first_outreach_at: now,\n    last_outreach_at: now,\n    last_updated_at: now,\n    recovery_channel_sent: 'email'\n  }\n}];"
+      },
+      "id": "94b3d167-9462-488c-a7d1-8f90b34d6a6c",
+      "name": "Code - Cart Update Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1072,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Abandoned Carts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkout_id": "={{ $json.checkout_id }}",
+            "last_updated_at": "={{ $json.last_updated_at }}",
+            "customer_first_name": "={{ $('Set - Cart Row').first().json.customer_first_name }}",
+            "outreach_attempts": "={{ $json.outreach_attempts }}",
+            "workflow_status": "={{ $json.workflow_status }}",
+            "recovery_channel_sent": "={{ $json.recovery_channel_sent }}"
+          },
+          "matchingColumns": [
+            "checkout_id"
+          ],
+          "schema": [
+            {
+              "id": "checkout_id",
+              "displayName": "checkout_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "customer_email",
+              "displayName": "customer_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_phone",
+              "displayName": "customer_phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_at",
+              "displayName": "created_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_updated_at",
+              "displayName": "last_updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "workflow_status",
+              "displayName": "workflow_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "outreach_attempts",
+              "displayName": "outreach_attempts",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "customer_first_name",
+              "displayName": "customer_first_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recovery_channel_sent",
+              "displayName": "recovery_channel_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "offer_code_sent",
+              "displayName": "offer_code_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "recovery_url",
+              "displayName": "recovery_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "368d867d-e177-46d7-8e72-e22fbb3ace28",
+      "name": "Google Sheets - Update Cart",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1296,
+        0
+      ],
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JghyStBwgr3kLsK9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Abandoned Carts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "fea789d2-7096-4fbf-8189-bfca5d434b61",
+      "name": "Google Sheets - Read Cart (Daily)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        128,
+        992
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JghyStBwgr3kLsK9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\n\n// Filter to today's entries in IST\nconst todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // YYYY-MM-DD\nconst items = allItems.filter(i => {\n  const ts = i.json.created_at;\n  if (!ts) return false;\n  return new Date(ts).toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) === todayStr;\n});\n\nconst total = items.length;\nconst outreach = items.filter(i => Number(i.json.outreach_attempts || 0) > 0).length;\nconst recovered = items.filter(i => i.json.workflow_status === 'recovered').length;\nconst pending = items.filter(i => i.json.workflow_status === 'pending').length;\nconst recoveryRate = outreach > 0 ? ((recovered / outreach) * 100).toFixed(1) : '0';\n\nreturn [{\n  json: {\n    summary: `:shopping_trolley: *Daily Cart Recovery Report*\\n\\n` +\n      `• Total checkouts today: *${total}*\\n` +\n      `• Recovery emails sent: *${outreach}*\\n` +\n      `• Carts recovered: *${recovered}*\\n` +\n      `• Pending (no outreach yet): *${pending}*\\n` +\n      `• Recovery rate: *${recoveryRate}%*\\n\\n` +\n      `_Report generated: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} IST_`\n  }\n}];"
+      },
+      "id": "3afa425f-11fa-4ba9-80ef-6ca44646e344",
+      "name": "Code - Daily Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        992
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0ALXSPK145",
+          "mode": "list",
+          "cachedResultName": "daily-reports"
+        },
+        "text": "={{ $json.summary }}",
+        "otherOptions": {}
+      },
+      "id": "49d991b6-917e-4f11-a640-0adcf03d7dc2",
+      "name": "Slack - Daily Report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        576,
+        992
+      ],
+      "webhookId": "070d9e82-b415-46f2-8f10-4030cf6c1c8f",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "hm5txA6HDC0VruEW",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1K-1hPyJKUXCGlqfPBKymAz6CCmM-2Ev0iud8_VYPL2c",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 45559084,
+          "mode": "list",
+          "cachedResultName": "Form responses 1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1K-1hPyJKUXCGlqfPBKymAz6CCmM-2Ev0iud8_VYPL2c/edit#gid=45559084"
+        },
+        "options": {}
+      },
+      "id": "e6b48904-7c91-4bf9-8b57-1e8e774bd1a9",
+      "name": "Google Sheets - Read Feedback (Weekly)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1360,
+        1008
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JghyStBwgr3kLsK9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const allItems = $input.all();\n\n// Filter to last 7 days\nconst weekAgo = new Date();\nweekAgo.setDate(weekAgo.getDate() - 7);\nweekAgo.setHours(0, 0, 0, 0);\n\nconst items = allItems.filter(i => {\n  const ts = i.json['Timestamp'] || i.json.timestamp;\n  return ts && new Date(ts) >= weekAgo;\n});\n\nconst ratings = items\n  .map(i => Number(i.json['Overall, how satisfied are you with our product/service?'] || i.json.satisfaction_rating || 0))\n  .filter(r => r > 0);\n\nconst nps = items\n  .map(i => Number(i.json['How likely are you to recommend us to a friend or colleague?'] || i.json.nps_rating || 0))\n  .filter(r => r > 0);\n\nconst avgSat = ratings.length ? (ratings.reduce((a,b) => a+b, 0) / ratings.length).toFixed(2) : 'N/A';\nconst avgNps = nps.length ? (nps.reduce((a,b) => a+b, 0) / nps.length).toFixed(2) : 'N/A';\nconst lowRatingCount = ratings.filter(r => r < 3).length;\n\nreturn [{\n  json: {\n    avgSat,\n    avgNps,\n    count: items.length,\n    lowRatingCount,\n    summary:\n      `:bar_chart: *Weekly Customer Feedback Summary*\\n\\n` +\n      `• Total responses this week: *${items.length}*\\n` +\n      `• Avg satisfaction: *${avgSat}/5*\\n` +\n      `• Avg NPS score: *${avgNps}/10*\\n` +\n      `• Low ratings (< 3): *${lowRatingCount}*\\n\\n` +\n      `_Week ending: ${new Date().toLocaleDateString('en-GB')}_`\n  }\n}];"
+      },
+      "id": "f658db70-4533-4935-a48a-67a289dd1125",
+      "name": "Code - Weekly Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        1008
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0AME73ECTT",
+          "mode": "list",
+          "cachedResultName": "weekly-reports"
+        },
+        "text": "={{ $json.summary }}",
+        "otherOptions": {}
+      },
+      "id": "986775c2-1413-40f5-abbf-b4db929dfebd",
+      "name": "Slack - Weekly Report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1808,
+        912
+      ],
+      "webhookId": "49026a0a-4e33-4ee5-961a-8bdc2ce987c8",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "hm5txA6HDC0VruEW",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $node[\"Config\"].json.admin_email }}",
+        "subject": "Weekly Customer Feedback Digest",
+        "message": "=<h2>Weekly Customer Feedback Report</h2><p>{{ $json.summary.replace(/\\n/g, '<br>').replace(/\\*/g, '<strong>').replace(/\\*/g, '</strong>') }}</p><ul><li><strong>Total Responses:</strong> {{ $json.count }}</li><li><strong>Avg Satisfaction:</strong> {{ $json.avgSat }}/5</li><li><strong>Avg NPS:</strong> {{ $json.avgNps }}/10</li><li><strong>Low Ratings this week:</strong> {{ $json.lowRatingCount }}</li></ul>",
+        "options": {}
+      },
+      "id": "f5bc317b-dd26-4123-bfbb-2b9f3786d512",
+      "name": "Gmail - Weekly Digest",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1808,
+        1104
+      ],
+      "webhookId": "c87f1c08-ae40-44da-a875-ffb7e5a4b8d7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3ZHtGi4XmicCK45p",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "topic": "checkouts/create"
+      },
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "4c2b405a-6c82-4b51-856d-3a5f876693bf",
+      "name": "Shopify Trigger- checkout created",
+      "webhookId": "8f7f099b-ab73-4940-bcf2-eee4b0209f43",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "H9B4f7yhgWo9hDTx",
+          "name": "Shopify Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "topic": "orders/fulfilled"
+      },
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        448
+      ],
+      "id": "2f4bb05c-b888-4b22-9312-60c9eebc3cba",
+      "name": "Shopify Trigger-order fullfilled",
+      "webhookId": "8fb0ffc9-24d6-4ccd-af0b-0f36c015750e",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "H9B4f7yhgWo9hDTx",
+          "name": "Shopify Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "abcf7312-7a7f-4ac2-8753-fb3c834c886a",
+              "name": "admin_email",
+              "value": "kanishkachaturvedi07@gmail.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1136,
+        1008
+      ],
+      "id": "18ca09fc-b358-43e9-888c-2a3e24aa6ae1",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0AMVHYAPSL",
+          "mode": "list",
+          "cachedResultName": "low-rating-alerts"
+        },
+        "text": "=🚨 *[ALERT] Low Customer Rating Received*\n\n*Order ID:* {{ $json.order_id }}\n*Rating:* {{ $json.satisfaction_rating }}/5\n*Customer:* {{ $json.customer_email }}\n*NPS Score:* {{ $json.nps_rating }}/10\n*Comments:* {{ $json.comments }}\n\n_⚠️ Twilio/WhatsApp alert placeholder — enable when Twilio is connected._",
+        "otherOptions": {}
+      },
+      "id": "bd286c93-218d-4b0d-9534-d106a55c2b80",
+      "name": "Slack - Low Rating Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1568,
+        256
+      ],
+      "webhookId": "36e86bec-67d0-4947-8ac3-923021043ac8",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "hm5txA6HDC0VruEW",
+          "name": "Slack account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "from": "={{ $env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886' }}",
+        "to": "={{ $env.TWILIO_WHATSAPP_TO_ALERTS }}",
+        "toWhatsapp": true,
+        "message": "=🚨 Low Customer Rating Received\\n\\nOrder ID: {{ $json.order_id }}\\nRating: {{ $json.satisfaction_rating }}/5\\nCustomer: {{ $json.customer_email }}\\nNPS: {{ $json.nps_rating }}/10\\nComments: {{ $json.comments }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [
+        1568,
+        448
+      ],
+      "id": "734af7d7-e8b5-4585-9105-f50cb12a209a",
+      "name": "Send an SMS/MMS/WhatsApp message",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": []
+        },
+        "options": {}
+      },
+      "id": "4aed10fe-df8c-42e9-ba38-6614fab05a5b",
+      "name": "No-op - Positive Feedback",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1568,
+        640
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "topic": "orders/paid"
+      },
+      "type": "n8n-nodes-base.shopifyTrigger",
+      "typeVersion": 1,
+      "position": [
+        1552,
+        0
+      ],
+      "id": "ccb0f292-640d-4410-9b02-04b4b1ca9bbd",
+      "name": "Shopify Trigger - Order Paid",
+      "webhookId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "credentials": {
+        "shopifyOAuth2Api": {
+          "id": "H9B4f7yhgWo9hDTx",
+          "name": "Shopify Access Token account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const order = $input.first().json;\nconst checkoutId = order.checkout_id ? String(order.checkout_id) : '';\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    checkout_id: checkoutId,\n    workflow_status: 'recovered',\n    last_updated_at: now\n  }\n}];"
+      },
+      "id": "34ee3731-f5b2-431b-95d2-52399d8312ad",
+      "name": "Code - Mark Cart Recovered",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Abandoned Carts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "checkout_id": "={{ $json.checkout_id }}",
+            "workflow_status": "={{ $json.workflow_status }}",
+            "last_updated_at": "={{ $json.last_updated_at }}"
+          },
+          "matchingColumns": [
+            "checkout_id"
+          ],
+          "schema": [
+            {
+              "id": "checkout_id",
+              "displayName": "checkout_id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "workflow_status",
+              "displayName": "workflow_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_updated_at",
+              "displayName": "last_updated_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "bc50f00a-7933-4d75-bea7-dde5eb9d4556",
+      "name": "Google Sheets - Mark Cart Recovered",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2000,
+        0
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "JghyStBwgr3kLsK9",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Wait - 24h Post Delivery": {
+      "main": [
+        [
+          {
+            "node": "Set - Feedback Form Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Feedback Form Link": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Feedback Form Link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets Trigger - Feedback Row Added": {
+      "main": [
+        [
+          {
+            "node": "Code - Parse Form Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Parse Form Payload": {
+      "main": [
+        [
+          {
+            "node": "IF - Low Rating",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Low Rating": {
+      "main": [
+        [
+          {
+            "node": "Slack - Low Rating Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send an SMS/MMS/WhatsApp message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No-op - Positive Feedback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Cart Row": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Append Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Append Cart": {
+      "main": [
+        [
+          {
+            "node": "Wait - 60 Min Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait - 60 Min Cart": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Cart Recovery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Cart Recovery": {
+      "main": [
+        [
+          {
+            "node": "Code - Cart Update Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Cart Update Payload": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Update Cart",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule - Daily Report": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Read Cart (Daily)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read Cart (Daily)": {
+      "main": [
+        [
+          {
+            "node": "Code - Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Daily Summary": {
+      "main": [
+        [
+          {
+            "node": "Slack - Daily Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule - Weekly Report": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets - Read Feedback (Weekly)": {
+      "main": [
+        [
+          {
+            "node": "Code - Weekly Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Weekly Summary": {
+      "main": [
+        [
+          {
+            "node": "Slack - Weekly Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gmail - Weekly Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shopify Trigger- checkout created": {
+      "main": [
+        [
+          {
+            "node": "Set - Cart Row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shopify Trigger-order fullfilled": {
+      "main": [
+        [
+          {
+            "node": "Wait - 24h Post Delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shopify Trigger - Order Paid": {
+      "main": [
+        [
+          {
+            "node": "Code - Mark Cart Recovered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Mark Cart Recovered": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Mark Cart Recovered",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets - Read Feedback (Weekly)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "72942364-7758-4e22-a123-3504f8f4d310",
+  "meta": {
+    "instanceId": "46fe5d293f0cbb53f676f9c440cdb447ff9e27209882045ab5b00fb4c1b66aa1"
+  },
+  "id": "JprrY4vewg6LCNyr",
+  "tags": []
+}
