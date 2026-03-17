@@ -954,7 +954,7 @@
             {
               "id": "abcf7312-7a7f-4ac2-8753-fb3c834c886a",
               "name": "admin_email",
-              "value": "kanishkachaturvedi07@gmail.com",
+              "value": "test.admin@example.com",
               "type": "string"
             }
           ]

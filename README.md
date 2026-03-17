@@ -16,30 +16,6 @@ It automates abandoned-cart recovery, post-delivery feedback collection, low-rat
 
 - Main workflow export: [Lithobee Automation.json](Lithobee%20Automation.json)
 
-## Visual Block Views
-
-These are the workflow block screenshots available in this folder.
-
-### Block View 1
-
-![Workflow Block View 1](Screenshot%202026-03-17%20222426.png)
-
-### Block View 2
-
-![Workflow Block View 2](Screenshot%202026-03-17%20222635.png)
-
-### Block View 3
-
-![Workflow Block View 3](Screenshot%202026-03-17%20222701.png)
-
-### Block View 4
-
-![Workflow Block View 4](Screenshot%202026-03-17%20223906.png)
-
-### Block View 5
-
-![Workflow Block View 5](Screenshot%202026-03-17%20223921.png)
-
 ## High-Level Architecture
 
 ### Trigger Layer
@@ -211,7 +187,7 @@ Reconcile abandoned cart records once payment is completed.
 
 ## Node-Level Config
 
-- Config node currently sets admin_email to kanishkachaturvedi07@gmail.com
+- Config node currently sets admin_email to test.admin@example.com
 
 ## Environment Variables
 
