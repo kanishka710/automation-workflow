@@ -125,7 +125,7 @@ Produce daily operational visibility into cart recovery outcomes.
    - recovered count
    - pending count
    - recovery rate percentage
-4. Slack - Daily Report posts summary to daily-reports channel
+4. Slack - Daily Report posts summary to configured reporting destination
 
 ## 4) Weekly Feedback Report Flow
 
@@ -171,17 +171,31 @@ Reconcile abandoned cart records once payment is completed.
 ## Google Sheets Used
 
 1. Feedback responses sheet
-   - Document ID: 1K-1hPyJKUXCGlqfPBKymAz6CCmM-2Ev0iud8_VYPL2c
    - Sheet: Form responses 1
+   - Structure (recommended columns):
+     - submitted_at
+     - satisfaction_rating
+     - nps_score
+     - comment
+     - order_id
+     - customer_email
+     - customer_first_name
 2. Abandoned cart tracking sheet
-   - Document ID: 1Wg2rQJ6rLUaAJGwa9YZJ59ysKrkEPUitb0_QKuebwL8
    - Sheet: Abandoned Carts
-
-## Slack Channels Referenced
-
-1. daily-reports
-2. weekly-reports
-3. low-rating-alerts
+   - Structure (recommended columns):
+     - checkout_id
+     - customer_email
+     - customer_phone
+     - customer_first_name
+     - recovery_url
+     - workflow_status
+     - outreach_attempts
+     - first_outreach_at
+     - last_outreach_at
+     - recovery_channel_sent
+     - offer_code_sent
+     - recovered_at
+     - recovered_order_id
 
 ## Configuration and Environment
 
@@ -207,7 +221,7 @@ Twilio node references:
 2. Import [Lithobee Automation.json](Lithobee%20Automation.json)
 3. Reconnect all credentials in imported nodes
 4. Verify both Google Sheets are accessible and column names match expected schema
-5. Validate Slack channel bindings
+5. Validate Slack credentials and destination bindings
 6. Optionally enable and configure Twilio node
 7. Set workflow to active
 8. Run each branch with test payloads before production activation
